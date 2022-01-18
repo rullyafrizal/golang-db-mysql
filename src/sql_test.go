@@ -140,3 +140,114 @@ func TestInsertWithParameter(t *testing.T) {
 
 	fmt.Printf("Successfully insert data\n")
 }
+
+func TestLastInserId(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+
+	email := "rully@gmail.com"
+	comment := "Ini adalah komentar"
+
+	script := "INSERT INTO comments(email, comment) VALUES(?, ?);"
+
+	result, err := db.ExecContext(ctx, script, email, comment)
+
+	if err != nil {
+		panic(err)
+	}
+
+	insertedId, err := result.LastInsertId()
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Last Inserted Id: ", insertedId)
+
+}
+
+func TestPrepareStatement(t *testing.T) {
+	// jika query yang sama berulang-ulang lebih baik pakai prepare statement
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+
+	script := "INSERT INTO comments(email, comment) VALUES(?, ?);"
+
+	// buat dulu prepare context-nya
+	stmt, err := db.PrepareContext(ctx, script)
+
+	for i := 0; i < 10; i++ {
+		email := "rully" + strconv.Itoa(i) + "@gmail.com"
+		comment := "ini adalah komentar ke-" + strconv.Itoa(i)
+
+		// execute query tanpa script sql
+		// karena script sql sudah di-binding dengan prepare statement sebelumnya
+		result, err := stmt.ExecContext(ctx, email, comment)
+
+		if err != nil {
+			panic(err)
+		}
+
+		id, err := result.LastInsertId()
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Comment Id :", id)
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer stmt.Close()
+}
+
+func TestTransaction(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+
+	tx, err := db.Begin()
+
+	if err != nil {
+		panic(err)
+	}
+
+	script := "INSERT INTO comments(email, comment) VALUES(?, ?);"
+
+	for i := 0; i < 10; i++ {
+		email := "rully" + strconv.Itoa(i) + "@gmail.com"
+		comment := "ini adalah komentar ke-" + strconv.Itoa(i)
+
+		// execute query tanpa script sql
+		// karena script sql sudah di-binding dengan prepare statement sebelumnya
+		result, err := tx.ExecContext(ctx, script, email, comment)
+
+		if err != nil {
+			panic(err)
+		}
+
+		id, err := result.LastInsertId()
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Comment Id :", id)
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		panic(err)
+	}
+}

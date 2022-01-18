@@ -54,5 +54,34 @@ https://docs.google.com/presentation/d/15pvN3L3HTgA9aIMNkm03PzzIwlff0WDE6hOWWut9
 - Parameter ketiga adalah `args...interface{}`
 - Untuk menandai sebuah SQL membutuhkan parameter, kita bisa menggunakan tanda tanya `?`
 - Contoh : `INSERT INTO users (name, email) VALUES (?, ?)`
+
+## Auto Increment
+- Kita bisa menggunakan function `(Result) LastInsertId() (int64, error)` untuk mendapatkan nilai auto increment
   
+
+## Query atau Exec dengan Parameter
+- Saat kita pakai function Query atau Exec yang menggunakan parameter, sebenarnya implementasi di bawahnya menggunakan Prepare Statement
+- Jadi tahapan pertama statement-nya disiapkan terlebih dahulu, setelah itu baru di isi dengan parameter
+- Terkadang ada kasus di mana kita ingin melakukan beberapa hal yang sama sekaligus, hanya berbeda di parameternya. Misal bulk insert
+- Pembuatan Prepare Statement bisa dilakukan dengan manual, tanpa harus menggunakan Query atau Exec dengan parameter
+- Pembuatan Prepare Statement dengan menggunakan function `(DB) PrepareContext(ctx context, query string) (*Stmt, error)`
+- atau bisa juga tanpa context dengan menggunakan function `(DB) Prepare(query string) (*Stmt, error)`
+- Prepare statement direpresentasikan dengan struct `sql.Stmt`
+- Sama seperti resurce sql lainnya, Stmt harus di Close() jika sudah tidak digunakan
+
+## Database Transaction
+- Secara default, semua eksekusi SQL di Golang yang kita kirim akan otomatis di-commit, istilahnya auto-commit
+- Namun untuk menggunakan fitur transaksi di SQL, kita tidak boleh commit secara otomatis
+- Untuk memulai transaksi, kita bisa menggunakan function `(DB) Begin() (*Tx, error)`, di mana akan menghasilkan struct Tx yang merupakan representasi Transaction
+- Struct Tx ini yang kita gunakan sebagai pengganti DB untuk melakukan transaksi, hampir semua function di DB juga tersedia di Tx seperti Exec, Query, atau Prepare
+- Setelah selesai transaksi, kita bisa menggunakan function `(Tx) Commit() error` untuk commit data
+- Jika kita ingin rollback, kita bisa menggunakan function `(Tx) Rollback() error`
+
+## Repository Pattern
+- Repository Pattern adalah sebuah pattern yang mengatur hubungan antara model dan database
+- Repository Pattern memungkinkan kita untuk mengatur hubungan antara model dengan database secara efektif dan efisien
+- Pattern ini biasa digunakan untuk menghubungkan business logic dengan semua perintah SQL ke database
+- Semuq perintah SQL cukup ditulis di Repository, sedangkan jika dalam business logic butuh akses ke database maka tinggal panggil Repository saja
+
+
    
